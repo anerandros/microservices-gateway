@@ -106,7 +106,8 @@ function addHbCheck() {
                     data += d;
                 });
                 res.on('end', () => {
-                    var d = JSON.parse(data).explanation;
+                    data = data.replace('undefined', '');
+                    var d = JSON.parse(data);
                     console.log('MS Still alive:', d);
                 });
             });
