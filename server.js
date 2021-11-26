@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const https = require('https');
+const http = require('http');
 const app = express();
 const port = 3000;
 
@@ -21,8 +21,10 @@ app.post('/register', (req, res) => {
     const body = req.body;
     if (body) {
         var ms = createMs(body);
+        console.log('Received this MS', body);
         addMsToOnline(ms);
-        console.log('Added MS to onlineMS', ms.ip);
+        removeMsFromOffline(ms);
+        console.log('Added MS to onlineMS', ms);
     }
     res.send(JSON.stringify({
         status: STATUS
@@ -43,8 +45,8 @@ app.get('/offline', (req, res) => {
     }));
 });
 
-app.listen(port, () => {
-  console.log(`Gateway app listening at http://localhost:${port}`);
+app.listen(port, '192.168.1.100', () => {
+  console.log(`Gateway app listening at http://192.168.1.100:${port}`);
   addHbCheck();
 });
 
@@ -79,6 +81,12 @@ function removeMsFromOnline(msObj) {
     });
 }
 
+function removeMsFromOffline(msObj) {
+    offlineMS = offlineMS.filter(currMsObj => {
+        return currMsObj.ip !== msObj.ip;
+    });
+}
+
 function addHbCheck() {
     var p;
     const options = {
@@ -91,7 +99,8 @@ function addHbCheck() {
     setInterval(() => {
         onlineMS.forEach((currMsObj) => {
             options.hostname = currMsObj.ip;
-            const req = https.request(options, res => {
+            console.log('Starting request for', options);
+            const req = http.request(options, res => {
                 var data;
                 res.on('data', d => {
                     data += d;
@@ -104,6 +113,7 @@ function addHbCheck() {
             req.on('error', error => {
                 removeMsFromOnline(currMsObj);
                 addMsToOffline(currMsObj);
+                console.log('Error', error);
                 console.log('MS detached from onlineMS', currMsObj.ip);
             });
             req.end();           
